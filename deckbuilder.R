@@ -9,36 +9,28 @@ playTurn = function(deck, hand, battlefield) {
       hand = hand[hand$type == "creature",]
   }
   nBattlefieldLands = nrow(battlefield[battlefield$type == "land",])
-  handCreatures = hand[hand$type == "creature",]
+  handCreatures = hand[hand$type == "creature",, drop=FALSE]
   nHandCreatures = nrow(handCreatures)
-  handCreatureCosts = hand[hand$type == "creature", "cost"]
-  print (handCreatureCosts)
   creatureCombos = matrix(0, nrow = 2^nHandCreatures, ncol = nHandCreatures + 1)
-  j = 0
+  j = 1
   if (nHandCreatures >= 1) {
     for (i in 1:nHandCreatures) {
-      combinations = combn(handCreatureCosts, i)
+      if (nHandCreatures == 1)
+        combinations = matrix(handCreatures$cost)
+      else
+        combinations = combn(handCreatures$cost, i)
       for (k in 1:ncol(combinations)) {
         creatureCombo = t(combinations[, k])
-        x = tryCatch({
-          creatureCombos[j,] = c(creatureCombo, integer(nHandCreatures-i), sum(creatureCombo))
-        }, error = function(e) {
-          print("hello1")
-          print(c(creatureCombo, integer(nHandCreatures-i), sum(creatureCombo)))
-        })
+        creatureCombos[j,] = c(creatureCombo, integer(nHandCreatures-i), sum(creatureCombo))
         j = j + 1
       }
     }
-    validCreatureCombos = creatureCombos[creatureCombos[, (nHandCreatures + 1)] == nBattlefieldLands,]
-    if (length(validCreatureCombos) >=1) {
-      creatureCombo = tryCatch({
-        creatureCombo = validCreatureCombos[1, validCreatureCombos[1,] != 0]
-      }, error = function(e) {
-        print("hello2")
-      }, finally  = {
-        creatureCombo = validCreatureCombos[validCreatureCombos[] != 0]
-      })
-      nCreaturesInCombo = length(creatureCombo)
+    validCreatureCombos = creatureCombos[creatureCombos[, (nHandCreatures + 1)] <= nBattlefieldLands,, drop=FALSE]
+    validCreatureCombos = validCreatureCombos[validCreatureCombos[, (nHandCreatures + 1)] > 0,, drop=FALSE]
+    validCreatureCombos = validCreatureCombos[order(-validCreatureCombos[, nHandCreatures + 1]),,drop=FALSE]
+    if (nrow(validCreatureCombos) >= 1) {
+      creatureCombo = validCreatureCombos[1, validCreatureCombos[1,] != 0, drop=FALSE]
+      nCreaturesInCombo = ncol(creatureCombo)
       for (i in 1:nCreaturesInCombo) {
         if (i < nCreaturesInCombo) {
           creatureCost = creatureCombo[i]
@@ -56,7 +48,7 @@ playTurn = function(deck, hand, battlefield) {
   return (list(deck, hand, battlefield))
 }
 
-landCount = sample(1:59, 1)
+landCount = sample(1:54, 1)
 lands = data.frame(type = "land", cost = integer(landCount))
 deck = lands
 while (nrow(deck) < 60) {
@@ -72,18 +64,25 @@ colnames(battlefield) = c("type", "cost")
 
 opponentsLife = 20
 lastTurn = FALSE
+turnsPast = 0
 while (opponentsLife > 0)  {
   if (lastTurn == TRUE) {
-    print ("you lost")
-    print ("Battlefield:")
-    print (battlefield)
+    print(paste("Opponent's Life: ", opponentsLife))
+    print(paste("Cards in play: ", nrow(battlefield)))
+    print(paste("Cards in deck: ", nrow(deck)))
+    print(paste("cards in hand: ", nrow(hand)))
+    print ("You lost!")
     break
   }
-  if (nrow(deck) > 1)
-    deck = deck[2:nrow(deck),]
-  else
-    lastTurn = TRUE
+  turnsPast = turnsPast + 1
   hand = rbind(hand, deck[1,])
+  if (nrow(deck) == 1) {
+    lastTurn = TRUE
+    deck = data.frame(matrix(nrow = 0, ncol = 2))
+    colnames(deck) = c("type", "cost")
+  } else {
+    deck = deck[2:nrow(deck),]
+  }
   newBoardState = playTurn(deck, hand, battlefield)
   deck = newBoardState[[1]]
   hand = newBoardState[[2]]
@@ -93,4 +92,6 @@ while (opponentsLife > 0)  {
   print(paste("Cards in play: ", nrow(battlefield)))
   print(paste("Cards in deck: ", nrow(deck)))
   print(paste("cards in hand: ", nrow(hand)))
+  if (opponentsLife <= 0)
+    print(paste("You won in ", turnsPast))
 }
