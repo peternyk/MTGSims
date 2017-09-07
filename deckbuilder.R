@@ -52,7 +52,7 @@ landCount = sample(1:59, 1)
 lands = data.frame(type = "land", cost = integer(landCount))
 deck = lands
 while (nrow(deck) < 60) {
-  tempCost = sample(1:landCount, 1)
+  tempCost = sample(1:54, 1)
   tempCard = data.frame(type = "creature", cost = tempCost)
   deck = rbind(deck, tempCard)
 }

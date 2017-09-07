@@ -52,7 +52,7 @@ playTurn = function(deck, hand, battlefield) {
 results = data.frame(matrix(nrow = 0, ncol = 5))
 colnames(results) = c("win", "cost", "cost2", "cost3", "cost4")
 
-for (j in 1:1000) {
+for (j in 1:1000000) {
   landCount = sample(1:56, 1)
   lands = data.frame(type = "land", cost = integer(landCount))
   deck = lands
